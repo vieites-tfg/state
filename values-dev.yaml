@@ -7,7 +7,7 @@ zoo-frontend:
   image:
     tag: "0.0.0"
   ingress:
-    hostTemplate: "zoo-dev.example.com"
+    hostTemplate: "zoo-dev-prueba.example.com"
 
 zoo-backend:
   image:
