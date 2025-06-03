@@ -14,12 +14,6 @@ zoo-backend:
     tag: "0.0.0"
   mongo:
     service:
-      name: "zoo-mongo-dev-svc"
+      name: "zoo-dev-mongodb"
   ingress:
     hostTemplate: "api-zoo-dev.example.com"
-
-zoo-mongo:
-  internal:
-    enabled: true
-  external:
-    enabled: false
