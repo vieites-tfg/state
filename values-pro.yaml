@@ -1,5 +1,4 @@
 global:
-  # replicas: 2
   env:
     NODE_ENV: production
 
@@ -14,6 +13,6 @@ zoo-backend:
     tag: "0.0.0"
   mongo:
     service:
-      name: "zoo-mongo-pro-svc"
+      name: "zoo-pro-zoo-mongo-svc"
   ingress:
     hostTemplate: "api-zoo-pro.example.com"
