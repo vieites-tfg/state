@@ -14,6 +14,6 @@ zoo-backend:
     tag: "0.0.0"
   mongo:
     service:
-      name: "zoo-pro-mongodb"
+      name: "zoo-mongo-pro-svc"
   ingress:
     hostTemplate: "api-zoo-pro.example.com"
