@@ -1,0 +1,753 @@
+---
+# Source: zoo/charts/mongodb/templates/networkpolicy.yaml
+kind: NetworkPolicy
+apiVersion: networking.k8s.io/v1
+metadata:
+  name: zoo-dev-mongodb
+  namespace: "dev"
+  labels:
+    app.kubernetes.io/instance: zoo-dev
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: mongodb
+    app.kubernetes.io/version: 7.0.6
+    helm.sh/chart: mongodb-15.0.0
+    app.kubernetes.io/component: mongodb
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/instance: zoo-dev
+      app.kubernetes.io/name: mongodb
+      app.kubernetes.io/component: mongodb
+  policyTypes:
+    - Ingress
+    - Egress
+  egress:
+    - {}
+  ingress:
+    - ports:
+        - port: 27017
+---
+# Source: zoo/charts/mongodb/templates/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: zoo-dev-mongodb
+  namespace: "dev"
+  labels:
+    app.kubernetes.io/instance: zoo-dev
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: mongodb
+    app.kubernetes.io/version: 7.0.6
+    helm.sh/chart: mongodb-15.0.0
+secrets:
+  - name: zoo-dev-mongodb
+automountServiceAccountToken: false
+---
+# Source: zoo/charts/mongodb/templates/common-scripts-cm.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: zoo-dev-mongodb-common-scripts
+  namespace: "dev"
+  labels:
+    app.kubernetes.io/instance: zoo-dev
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: mongodb
+    app.kubernetes.io/version: 7.0.6
+    helm.sh/chart: mongodb-15.0.0
+    app.kubernetes.io/component: mongodb
+data:
+  startup-probe.sh: |
+    #!/bin/bash
+    exec mongosh  $TLS_OPTIONS --port $MONGODB_PORT_NUMBER --eval 'if (!(db.hello().isWritablePrimary || db.hello().secondary)) { throw new Error("Not ready") }'
+  readiness-probe.sh: |
+    #!/bin/bash
+    # Run the proper check depending on the version
+    [[ $(mongod -version | grep "db version") =~ ([0-9]+\.[0-9]+\.[0-9]+) ]] && VERSION=${BASH_REMATCH[1]}
+    . /opt/bitnami/scripts/libversion.sh
+    VERSION_MAJOR="$(get_sematic_version "$VERSION" 1)"
+    VERSION_MINOR="$(get_sematic_version "$VERSION" 2)"
+    VERSION_PATCH="$(get_sematic_version "$VERSION" 3)"
+    readiness_test='db.isMaster().ismaster || db.isMaster().secondary'
+    if [[ ( "$VERSION_MAJOR" -ge 5 ) || ( "$VERSION_MAJOR" -ge 4 && "$VERSION_MINOR" -ge 4 && "$VERSION_PATCH" -ge 2 ) ]]; then
+        readiness_test='db.hello().isWritablePrimary || db.hello().secondary'
+    fi
+    exec mongosh  $TLS_OPTIONS --port $MONGODB_PORT_NUMBER --eval "if (!(${readiness_test})) { throw new Error(\"Not ready\") }"
+  ping-mongodb.sh: |
+    #!/bin/bash
+    exec mongosh  $TLS_OPTIONS --port $MONGODB_PORT_NUMBER --eval "db.adminCommand('ping')"
+---
+# Source: zoo/charts/mongodb/templates/initialization-configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: zoo-dev-mongodb-init-scripts
+  namespace: "dev"
+  labels:
+    app.kubernetes.io/instance: zoo-dev
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: mongodb
+    app.kubernetes.io/version: 7.0.6
+    helm.sh/chart: mongodb-15.0.0
+    app.kubernetes.io/component: mongodb
+data:
+  init-zoo.js: |-
+    use("zoo");
+    db.createCollection("animals");
+    db.animals.insertMany([
+      {
+        name: "Leo",
+        species: "Lion",
+        birthday: "2018-03-15",
+        genre: "male",
+        diet: "Carnivore",
+        condition: "Healthy",
+        notes: "Alpha male in the pride."
+      },
+      {
+        name: "Nala",
+        species: "Lion",
+        birthday: "2019-07-10",
+        genre: "female",
+        diet: "Carnivore",
+        condition: "Healthy",
+        notes: "Sister of the alpha male."
+      },
+      {
+        name: "Zuri",
+        species: "Giraffe",
+        birthday: "2017-11-01",
+        genre: "female",
+        diet: "Herbivore",
+        condition: "Healthy"
+      },
+      {
+        name: "George",
+        species: "Giraffe",
+        birthday: "2016-06-22",
+        genre: "male",
+        diet: "Herbivore",
+        condition: "Healthy"
+      },
+      {
+        name: "Tisha",
+        species: "Elephant",
+        birthday: "2012-12-30",
+        genre: "female",
+        diet: "Herbivore",
+        condition: "Healthy"
+      },
+      {
+        name: "Dumbo",
+        species: "Elephant",
+        birthday: "2010-05-12",
+        genre: "male",
+        diet: "Herbivore",
+        condition: "Injured",
+        notes: "Recovering from minor foot injury."
+      },
+      {
+        name: "Stripes",
+        species: "Zebra",
+        birthday: "2018-01-19",
+        genre: "male",
+        diet: "Herbivore",
+        condition: "Healthy"
+      },
+      {
+        name: "Zara",
+        species: "Zebra",
+        birthday: "2019-02-08",
+        genre: "female",
+        diet: "Herbivore",
+        condition: "Healthy"
+      },
+      {
+        name: "Miko",
+        species: "Monkey",
+        birthday: "2020-09-15",
+        genre: "male",
+        diet: "Omnivore",
+        condition: "Healthy",
+        notes: "Very playful with visitors."
+      },
+      {
+        name: "Kali",
+        species: "Monkey",
+        birthday: "2021-03-03",
+        genre: "female",
+        diet: "Omnivore",
+        condition: "Healthy"
+      },
+      {
+        name: "Ray",
+        species: "Parrot",
+        birthday: "2019-04-10",
+        genre: "male",
+        diet: "Omnivore",
+        condition: "Healthy",
+        notes: "Knows a few words."
+      },
+      {
+        name: "Rita",
+        species: "Parrot",
+        birthday: "2018-11-18",
+        genre: "female",
+        diet: "Omnivore",
+        condition: "Healthy"
+      },
+      {
+        name: "Cleo",
+        species: "Tiger",
+        birthday: "2015-07-02",
+        genre: "female",
+        diet: "Carnivore",
+        condition: "Healthy"
+      },
+      {
+        name: "Sheru",
+        species: "Tiger",
+        birthday: "2014-09-29",
+        genre: "male",
+        diet: "Carnivore",
+        condition: "Healthy",
+        notes: "Recently transferred from another zoo."
+      },
+      {
+        name: "Benny",
+        species: "Penguin",
+        birthday: "2019-12-25",
+        genre: "male",
+        diet: "Carnivore",
+        condition: "Healthy"
+      },
+      {
+        name: "Penny",
+        species: "Penguin",
+        birthday: "2020-12-01",
+        genre: "female",
+        diet: "Carnivore",
+        condition: "Healthy"
+      },
+      {
+        name: "Lola",
+        species: "Flamingo",
+        birthday: "2017-08-08",
+        genre: "female",
+        diet: "Omnivore",
+        condition: "Healthy"
+      },
+      {
+        name: "Felipe",
+        species: "Flamingo",
+        birthday: "2016-02-14",
+        genre: "male",
+        diet: "Omnivore",
+        condition: "Healthy"
+      },
+      {
+        name: "Gaston",
+        species: "Hippo",
+        birthday: "2011-03-23",
+        genre: "male",
+        diet: "Herbivore",
+        condition: "Ill",
+        notes: "Under veterinary supervision."
+      },
+      {
+        name: "Hilda",
+        species: "Hippo",
+        birthday: "2011-08-30",
+        genre: "female",
+        diet: "Herbivore",
+        condition: "Healthy"
+      }
+    ]);
+    print("'ZOO' DATABASE INITIALIZED WITH 20 ANIMALS IN 'ANIMALS' COLLECTION.");
+---
+# Source: zoo/charts/zoo-backend/templates/configMap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: zoo-dev-zoo-backend-config
+data:
+  NODE_ENV: development
+  YARN_CACHE_FOLDER: .cache
+---
+# Source: zoo/charts/zoo-frontend/templates/configmap-js.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: zoo-dev-zoo-frontend-config-js
+data:
+  config.js: |
+    window.APP_CONFIG = {
+      VITE_API_URL: "http://api-zoo-dev.example.com:8080",
+    };
+---
+# Source: zoo/charts/zoo-frontend/templates/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: zoo-dev-zoo-frontend-config
+data:
+  VITE_API_URL: "http://zoo-backend-dev-backend:3000"
+  NODE_ENV: development
+  YARN_CACHE_FOLDER: .cache
+---
+# Source: zoo/charts/mongodb/templates/standalone/pvc.yaml
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: zoo-dev-mongodb
+  namespace: "dev"
+  labels:
+    app.kubernetes.io/instance: zoo-dev
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: mongodb
+    app.kubernetes.io/version: 7.0.6
+    helm.sh/chart: mongodb-15.0.0
+    app.kubernetes.io/component: mongodb
+  annotations:
+spec:
+  accessModes:
+    - "ReadWriteOnce"
+  resources:
+    requests:
+      storage: "5Gi"
+  storageClassName: standard
+---
+# Source: zoo/charts/mongodb/templates/standalone/svc.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: zoo-dev-mongodb
+  namespace: "dev"
+  labels:
+    app.kubernetes.io/instance: zoo-dev
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: mongodb
+    app.kubernetes.io/version: 7.0.6
+    helm.sh/chart: mongodb-15.0.0
+    app.kubernetes.io/component: mongodb
+spec:
+  type: ClusterIP
+  sessionAffinity: None
+  ports:
+    - name: "mongodb"
+      port: 27017
+      targetPort: mongodb
+      nodePort: null
+  selector:
+    app.kubernetes.io/instance: zoo-dev
+    app.kubernetes.io/name: mongodb
+    app.kubernetes.io/component: mongodb
+---
+# Source: zoo/charts/zoo-backend/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: zoo-dev-zoo-backend-svc
+  labels:
+    app.kubernetes.io/name: zoo-backend
+    app.kubernetes.io/instance: zoo-dev
+spec:
+  type: ClusterIP
+  ports:
+    - port: 3000
+      targetPort: 3000
+  selector:
+    app.kubernetes.io/name: zoo-backend
+    app.kubernetes.io/instance: zoo-dev
+---
+# Source: zoo/charts/zoo-frontend/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: zoo-dev-zoo-frontend-svc
+  labels:
+    app.kubernetes.io/name: zoo-frontend
+    app.kubernetes.io/instance: zoo-dev
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: 80
+  selector:
+    app.kubernetes.io/name: zoo-frontend
+    app.kubernetes.io/instance: zoo-dev
+---
+# Source: zoo/charts/mongodb/templates/standalone/dep-sts.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: zoo-dev-mongodb
+  namespace: "dev"
+  labels:
+    app.kubernetes.io/instance: zoo-dev
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: mongodb
+    app.kubernetes.io/version: 7.0.6
+    helm.sh/chart: mongodb-15.0.0
+    app.kubernetes.io/component: mongodb
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: zoo-dev
+      app.kubernetes.io/name: mongodb
+      app.kubernetes.io/component: mongodb
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/instance: zoo-dev
+        app.kubernetes.io/managed-by: Helm
+        app.kubernetes.io/name: mongodb
+        app.kubernetes.io/version: 7.0.6
+        helm.sh/chart: mongodb-15.0.0
+        app.kubernetes.io/component: mongodb
+    spec:
+      automountServiceAccountToken: false
+      serviceAccountName: zoo-dev-mongodb
+      affinity:
+        podAffinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app.kubernetes.io/instance: zoo-dev
+                    app.kubernetes.io/name: mongodb
+                    app.kubernetes.io/component: mongodb
+                topologyKey: kubernetes.io/hostname
+              weight: 1
+        nodeAffinity:
+      securityContext:
+        fsGroup: 1001
+        fsGroupChangePolicy: Always
+        supplementalGroups: []
+        sysctls: []
+      enableServiceLinks: true
+      initContainers:
+        - name: volume-permissions
+          image: docker.io/bitnami/os-shell:12-debian-12-r16
+          imagePullPolicy: "IfNotPresent"
+          command:
+            - /bin/bash
+          args:
+            - -ec
+            - |
+              mkdir -p /bitnami/mongodb/
+              chown 1001:1001 /bitnami/mongodb/
+              find  /bitnami/mongodb/ -mindepth 1 -maxdepth 1 -not -name ".snapshot" -not -name "lost+found" | xargs -r chown -R 1001:1001
+          securityContext:
+            runAsUser: 0
+            seLinuxOptions: {}
+          resources:
+            limits:
+              cpu: 150m
+              ephemeral-storage: 1024Mi
+              memory: 192Mi
+            requests:
+              cpu: 100m
+              ephemeral-storage: 50Mi
+              memory: 128Mi
+          volumeMounts:
+            - name: empty-dir
+              mountPath: /tmp
+              subPath: tmp-dir
+            - name: datadir
+              mountPath: /bitnami/mongodb
+      containers:
+        - name: mongodb
+          image: docker.io/xavidop/mongodb:7.0
+          imagePullPolicy: "IfNotPresent"
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            privileged: false
+            readOnlyRootFilesystem: true
+            runAsGroup: 1001
+            runAsNonRoot: true
+            runAsUser: 1001
+            seLinuxOptions: {}
+            seccompProfile:
+              type: RuntimeDefault
+          env:
+            - name: BITNAMI_DEBUG
+              value: "false"
+            - name: MONGODB_EXTRA_USERNAMES
+              value: "user"
+            - name: MONGODB_EXTRA_DATABASES
+              value: "zoo"
+            - name: MONGODB_EXTRA_PASSWORDS
+              valueFrom:
+                secretKeyRef:
+                  name: zoo-dev-mongodb
+                  key: mongodb-passwords
+            - name: MONGODB_ROOT_USER
+              value: "carer"
+            - name: MONGODB_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: zoo-dev-mongodb
+                  key: mongodb-root-password
+            - name: ALLOW_EMPTY_PASSWORD
+              value: "no"
+            - name: MONGODB_SYSTEM_LOG_VERBOSITY
+              value: "0"
+            - name: MONGODB_DISABLE_SYSTEM_LOG
+              value: "no"
+            - name: MONGODB_DISABLE_JAVASCRIPT
+              value: "no"
+            - name: MONGODB_ENABLE_JOURNAL
+              value: "yes"
+            - name: MONGODB_PORT_NUMBER
+              value: "27017"
+            - name: MONGODB_ENABLE_IPV6
+              value: "no"
+            - name: MONGODB_ENABLE_DIRECTORY_PER_DB
+              value: "no"
+          ports:
+            - name: mongodb
+              containerPort: 27017
+          livenessProbe:
+            failureThreshold: 6
+            initialDelaySeconds: 30
+            periodSeconds: 20
+            successThreshold: 1
+            timeoutSeconds: 10
+            exec:
+              command:
+                - /bitnami/scripts/ping-mongodb.sh
+          readinessProbe:
+            failureThreshold: 6
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 5
+            exec:
+              command:
+                - /bitnami/scripts/readiness-probe.sh
+          resources:
+            limits:
+              cpu: 750m
+              ephemeral-storage: 1024Mi
+              memory: 768Mi
+            requests:
+              cpu: 500m
+              ephemeral-storage: 50Mi
+              memory: 512Mi
+          volumeMounts:
+            - name: empty-dir
+              mountPath: /tmp
+              subPath: tmp-dir
+            - name: empty-dir
+              mountPath: /opt/bitnami/mongodb/conf
+              subPath: app-conf-dir
+            - name: empty-dir
+              mountPath: /opt/bitnami/mongodb/tmp
+              subPath: app-tmp-dir
+            - name: empty-dir
+              mountPath: /opt/bitnami/mongodb/logs
+              subPath: app-logs-dir
+            - name: datadir
+              mountPath: /bitnami/mongodb
+              subPath:
+            - name: common-scripts
+              mountPath: /bitnami/scripts
+            - name: custom-init-scripts
+              mountPath: /docker-entrypoint-initdb.d
+      volumes:
+        - name: empty-dir
+          emptyDir: {}
+        - name: common-scripts
+          configMap:
+            name: zoo-dev-mongodb-common-scripts
+            defaultMode: 0550
+        - name: custom-init-scripts
+          configMap:
+            name: zoo-dev-mongodb-init-scripts
+        - name: datadir
+          persistentVolumeClaim:
+            claimName: zoo-dev-mongodb
+---
+# Source: zoo/charts/zoo-backend/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: zoo-dev-backend
+  labels:
+    app.kubernetes.io/name: zoo-backend
+    app.kubernetes.io/instance: zoo-dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: zoo-backend
+      app.kubernetes.io/instance: zoo-dev
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: zoo-backend
+        app.kubernetes.io/instance: zoo-dev
+    spec:
+      imagePullSecrets:
+        - name: ghcr-secret
+      containers:
+        - name: backend
+          image: "ghcr.io/vieites-tfg/zoo-backend:0.0.1"
+          imagePullPolicy:
+          envFrom:
+            - configMapRef:
+                name: zoo-dev-zoo-backend-config
+            - secretRef:
+                name: zoo-dev-zoo-backend-secret
+          ports:
+            - containerPort: 3000
+          resources: {}
+---
+# Source: zoo/charts/zoo-frontend/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: zoo-dev-frontend
+  labels:
+    app.kubernetes.io/name: zoo-frontend
+    app.kubernetes.io/instance: zoo-dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: zoo-frontend
+      app.kubernetes.io/instance: zoo-dev
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: zoo-frontend
+        app.kubernetes.io/instance: zoo-dev
+    spec:
+      imagePullSecrets:
+        - name: ghcr-secret
+      volumes:
+        - name: frontend-config-volume
+          configMap:
+            name: zoo-dev-zoo-frontend-config-js
+            items:
+              - key: config.js
+                path: config.js
+      containers:
+        - name: frontend
+          tty: true
+          stdin: true
+          image: "ghcr.io/vieites-tfg/zoo-frontend:0.0.1"
+          imagePullPolicy: Always
+          envFrom:
+            - configMapRef:
+                name: zoo-dev-zoo-frontend-config
+          ports:
+            - containerPort: 80
+          resources: {}
+          volumeMounts:
+            - name: frontend-config-volume
+              mountPath: /usr/share/nginx/html/config.js
+              subPath: config.js
+              readOnly: true
+---
+# Source: zoo/charts/zoo-backend/templates/ingress.yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: zoo-dev-zoo-backend-ingress
+spec:
+  rules:
+    - host: api-zoo-dev.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: zoo-dev-zoo-backend-svc
+                port:
+                  number: 3000
+---
+# Source: zoo/charts/zoo-frontend/templates/ingress.yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: zoo-dev-zoo-frontend-ingress
+spec:
+  rules:
+    - host: zoo-dev.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: zoo-dev-zoo-frontend-svc
+                port:
+                  number: 80
+---
+apiVersion: bitnami.com/v1alpha1
+kind: SealedSecret
+metadata:
+  creationTimestamp: null
+  name: zoo-dev-mongodb
+  namespace: dev
+spec:
+  encryptedData:
+    mongodb-passwords: AgBGFq257hG0r0RPebCxVfz9mNLojWznvNt6CPdLZpyqTe2hRguZDLrkjN+IGVHDUQOXfo1NjlpPQbdlD9aWIvWnQ49aHI/luFldV09D0RYYpX4gIuCL7V6t4IMv7TAITLBQUjtJQpnIYDUG15fMGKyTdHn9gWr0yaUodnhOCscfBQudjkIr563iNYJYAIX5LsGw+hWFJaXIPk8be+yWBQ6UljWqbgIrQmvGBU29/QQIS8o0fOKnAZHLmtI551DEt7a5BxszVM54fOWvzKOi4XteqQ+LZmXOdMhxIK9c2yNW5m1gB6qdDinDXy3S3HdJoC3mkJQ5f3nBZ9P9xLUJX8LF8EMnsEVZiTaMrPLWVsI9qq8zasbNAyUelPgOROKP4NQVxcXPk5gHLVAYB/MkTp798x0mDKnCfgiQKYemKPfqlxacB4hbfcl2wZXRTQB1FqoB0E+o3A8ysKXaUzcjAv/Ko5siMSfriMhD3oilp/nvVdJu30h+hnZHETzWyFXbMhJ5eotkBObe+z+EmXdjbup1iUyiKnLvzYD2uBN8q6Lbfop5X3EKjbc4sSPgANTzVlWjT/GWDGvs7ESuBCZy2StJUnbEY6i5/3edc3Hpuqkg4vDjR68rRDAhtberFK6fqWMGF7U5dFSO3BGk/JbyW50GsE81e8g2zHT3PTlFYd4on2d5koC9y/BEuKbEIFgBjxVext0iJGnbU+sS
+    mongodb-root-password: AgBTLvM8/0es/dRRJ0eFArnVCDIB3z6UX4RTP5lWrk5EhyYfBRAPwPf9o/XvjRRY9r+yNrGhyiuRXKbHMu+8z5iqpbwfE+c40jzlZKxkE8wfDgqoxfuv1jYPPZ/j1YfEn75KhVoyWbfAQNj3iODsfC3ENLPL+Ag9Sm8gipoa+EKkccYnVMhll1YRrBFvZg7pJ7osBGgNyuGfHDLyDzHXdIsaSuQYJUamo24UAnDUB/BzMcG8v+NljcwmouQdv4H+MlMupEaJxXO+3dMcTlS/0QBpZvgU3cgAKYOMGtPiHUjSLKIHdgtRB+/j2eqwMRax7/bLg2V6EXjqCzLl2bjOHtC9J13Fc+lFMDxfmhnAHcow5j3p4vGCXG/ZXQoY3ywNOIdm9COZKZHvC68KrCqP/fcvFHDZJCLQuTcigK5S3CflAaHbKYA9Po8QyMZIcWwNPGi6ebkWUWVTDcHfgbVW7qHqfhQMeFSRaT2mEzOlKYnLB4Rr+n0FDN0eeuu3alQb6mvu92VKJ/stitl+kERuCw/ZDfO0/AQYJO1cv9hBTKx3gOGSFbE4lS2jQGL62uL5KOuA98WrExPx6hj04/DNR0taMsNhg5guu5Q5AVcqr2e0dBUluDf/MHt9S2+Q9jcMp5gfVuZEAK3oEPtw1e2DLPlITwR1Fblxc0K/nw1a9v8k5unjNwbDBzRsNlXHqqCYmhSWMxkT878mpks=
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app.kubernetes.io/component: mongodb
+        app.kubernetes.io/instance: zoo-dev
+        app.kubernetes.io/managed-by: Helm
+        app.kubernetes.io/name: mongodb
+        app.kubernetes.io/version: 7.0.6
+        helm.sh/chart: mongodb-15.0.0
+      name: zoo-dev-mongodb
+      namespace: dev
+    type: Opaque
+---
+apiVersion: bitnami.com/v1alpha1
+kind: SealedSecret
+metadata:
+  creationTimestamp: null
+  name: zoo-dev-zoo-backend-secret
+  namespace: default
+spec:
+  encryptedData:
+    MONGODB_URI: AgBU9Fandf5qXO2A986N6GCClisNpamJtka5ZU6q9WZw4T+6Bwd/NgfUlyF6VNx5rvLbfEZJk9bFGLQE45kW2/UrrUjipfmYNQVyyxFuK+AOY2Q/CfdBvYVebPFzRRUFK2yRrdZAZLlqph7IefDErei5BNFVXIHwHqTYIslHQUfFFDRnEUAjDUtLp4N2It1A4qDLNNAaxOW5mxKuSAJX2JvWjE8OxM9y1Qr9Ck/Q08YwiDzUUNdtfXmriQaEaKMN8N8FCAccpE1HYaQgR+3bo+EwcnfpF/Q3eS0X9DhdVQoLMe5rQ+YZ/dllDq2TcZz/San6sexsQ/NvrzDtOxyw1kEVSNlS+NOLh62jAs7/CUQtrhYQXTyS806k5yTMesZbL1tAiqOAsRWNEqv7vBKw1y1+t9rnnkeycdpkjtUVa7NtrOhs2iZ1tuVn8VPhcrMvOvl/EUXMJbaRHFUEfOtTlSyv0GVXTCEAvFulPhUwj39XgyFhBB6WmIAK12BLh8dJsmF36cHAthyi1zMR49KQjUd8GWmBz3X/MuCEhX3NJGjHsrQZ72b4y0jGxCyXvXBw3YuT0ZWArjrSWmaGg1mYQbL5Q03XWZHdUnWze5ZVTD6VOsAsSDeyNcdFtToqekvoVoRDn6nSDwFPhYXf0LnGU8eTr525WpRLJwJw9zL5ySAkJClvKEJgpL11o1VpiwvTky6qSUZUV97PSb8W2gdSk2LEzbrc1phx2BjtnmIrsRIh3JXs2lVTa9wHEKjsS0gfgWgXGIauhVUt8Yv8wpXc8USFXI+OZVM=
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app.kubernetes.io/instance: zoo-dev
+      name: zoo-dev-zoo-backend-secret
+      namespace: default
+    type: Opaque
+---
+apiVersion: bitnami.com/v1alpha1
+kind: SealedSecret
+metadata:
+  creationTimestamp: null
+  name: ghcr-secret
+  namespace: default
+spec:
+  encryptedData:
+    .dockerconfigjson: AgBnO2jVtEaTWik6CIIdOJ+vDT0MYHNhJdO+dc/m8jikCxyAgefuqVvxP1L5UV8caBsqKUpEGu0p0L7z4v+Xi7Ro1iT5yVnnRXeF/qjymswtxwDohFo3zTKFJNlMg1k8T2UvLEw8BpLhL4SAUxpXCLTDRiXRs5gzwoPFT3XFmzPhUrZ4RPcXV2lWpvGN9MCgzHeGYc5+OiSydECloZpH1ERMAdyIDYOjvXj00yv1/iHJF33rZ+nljZq64ugA3Vz3N7UzgnIuVmA8Ugcj91wljn0empLjHyamGrsKIIuB4kAt5pj6KKFp+Z8jk2UwE1EfbSHJVfZ+MMvxnmMjHsfqbzymUKosh+iBRqd8vzEPdoaZWlrN2bS176Egc2NkGMAhCygJO4b3TYUJfGI0ztXZZtIQSk3J3PcGlPoim6Al3GqfvriMF+4GPp09YN9sw86q5zT0RM9mKjiARTgcdsVvC+9RQtBj0lzPdIVpaa6uNXyAuF3CltlqRS6uEhdr/cwTSi/zhYWMKCC3/6G4xfQf4kpsmpoPz41RqVuuZd+mt6o0cGuPYc7Pp3atse7GDaaYH172O7a7LVHKfcXCno8jrcPdwQ+aHggKx0U1ygCLV2SsA0fOxk1XppVPZsrCiR9rm9bg2SWR6DPR0EZUmRHooeADkgtWYkJEC/qZqHAXhrGU7BLNbsxKfrt+2w31FuUqzYZjLhjapXFQzifFKOVu1t6jZ/FgfXprKtopbvg3FXmnQQnkiKbHBElf5zzeDw88vkrTC2PXXzNV41i+mHuVHrE1AGsrAfpb9CwYs3iGvmZKUZduHLAcBBCjTBqLydQ109RfcnqNKp7h5wl4VgYWHR9q5Eigs3Ut0pNzvDpjBAf0tk3YG8aPwYDCeS3/G7rAYogwSa/DjaTlsKudpHZFpAYAr3n4IdIIp09yGDWRDxBulIr4q7mJ+Fkw3K9YGt5ptc97zjzYhpMhZRY6FjwOJ+Y8yJf/l0j6gg==
+  template:
+    metadata:
+      creationTimestamp: null
+      name: ghcr-secret
+      namespace: default
+    type: kubernetes.io/dockerconfigjson
