@@ -59,7 +59,7 @@ metadata:
 type: Opaque
 data:
   mongodb-root-password: "Y2FyZXJwYXNz"
-  mongodb-passwords: "MlY2OU1pdngyag=="
+  mongodb-passwords: "TnUwOWVrUTZhQQ=="
 ---
 # Source: zoo/charts/zoo-backend/templates/secret.yaml
 apiVersion: v1
