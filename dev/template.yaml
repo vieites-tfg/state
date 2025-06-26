@@ -58,8 +58,8 @@ metadata:
     app.kubernetes.io/component: mongodb
 type: Opaque
 data:
-  mongodb-root-password: "Y2FyZXJwYXNz"
-  mongodb-passwords: "TnUwOWVrUTZhQQ=="
+  mongodb-root-password: "RU5DW0FFUzI1Nl9HQ00sZGF0YTo5ejVoSGxnMWR3OEMsaXY6eVlrL0tZL0V3eUZKSlViUkM2VXdqL3lFcUdJeG84ekk1NStjOXo0KzloRT0sdGFnOnFyeVFqSU9OS1hKNFFZMm9lWHJNaVE9PSx0eXBlOnN0cl0="
+  mongodb-passwords: "OTJVTUpUNU1nQw=="
 ---
 # Source: zoo/charts/zoo-backend/templates/secret.yaml
 apiVersion: v1
@@ -71,7 +71,7 @@ metadata:
 type: Opaque
 stringData:
   MONGODB_URI: |
-    mongodb://carer:carerpass@zoo-dev-mongodb:27017/zoo?authSource=admin
+    mongodb://ENC[AES256_GCM,data:IK8s4pM=,iv:R/xUUjAVxMO6AGSscYDkQlEYAMx57z+dyEZUQC4NyIw=,tag:2D1Yk68MfmdW21XMy8l70w==,type:str]:ENC[AES256_GCM,data:C09FN9lE16WX,iv:p7pitTsxtCQyjPFExABimTNz7UGO6+vEEfeBMPoUksw=,tag:EgciYnOWBizqCu6I/foUBg==,type:str]@zoo-dev-mongodb:27017/zoo?authSource=admin
 ---
 # Source: zoo/templates/ghcr-secret.yaml
 apiVersion: v1
@@ -80,7 +80,7 @@ metadata:
   name: ghcr-secret
 type: kubernetes.io/dockerconfigjson
 data:
-  .dockerconfigjson: ewogICJhdXRocyI6IHsKICAgICJnaGNyLmlvIjogewogICAgICAidXNlcm5hbWUiOiAidmllaXRlcyIsCiAgICAgICJwYXNzd29yZCI6ICJnaHBfdkVJbVR2d09CeXhhUzFGRnZZU3VOaGFSR0YyUVpmMGdBUm9BIiwKICAgICAgImF1dGgiOiAiZG1sbGFYUmxjenBuYUhCZmRrVkpiVlIyZDA5Q2VYaGhVekZHUm5aWlUzVk9hR0ZTUjBZeVVWcG1NR2RCVW05QiIKICAgIH0KICB9Cn0=
+  .dockerconfigjson: ewogICJhdXRocyI6IHsKICAgICJnaGNyLmlvIjogewogICAgICAidXNlcm5hbWUiOiAidmllaXRlcyIsCiAgICAgICJwYXNzd29yZCI6ICJFTkNbQUVTMjU2X0dDTSxkYXRhOmZzUmh6YTFmRHNRRVQ2REovOHdqYW9MV0g4cGI5c2NyU09ab25ETm9LT3VDSGxvREdnYy9FZz09LGl2OkJLZkRRMklVNFYrUUt6OUw1UDUxYzRWNGRXWU5yK00xSFM2NmF5V0Zqb0E9LHRhZzpQOWJxbUxLNGpkVG9FcFc4SGk1YnJ3PT0sdHlwZTpzdHJdIiwKICAgICAgImF1dGgiOiAiZG1sbGFYUmxjenBGVGtOYlFVVlRNalUyWDBkRFRTeGtZWFJoT21aelVtaDZZVEZtUkhOUlJWUTJSRW92T0hkcVlXOU1WMGc0Y0dJNWMyTnlVMDlhYjI1RVRtOUxUM1ZEU0d4dlJFZG5ZeTlGWnowOUxHbDJPa0pMWmtSUk1rbFZORllyVVV0Nk9VdzFVRFV4WXpSV05HUlhXVTV5SzAweFNGTTJObUY1VjBacWIwRTlMSFJoWnpwUU9XSnhiVXhMTkdwa1ZHOUZjRmM0U0drMVluSjNQVDBzZEhsd1pUcHpkSEpkIgogICAgfQogIH0KfQ==
 ---
 # Source: zoo/charts/mongodb/templates/common-scripts-cm.yaml
 apiVersion: v1
@@ -533,7 +533,7 @@ spec:
                   name: zoo-dev-mongodb
                   key: mongodb-passwords
             - name: MONGODB_ROOT_USER
-              value: "carer"
+              value: "ENC[AES256_GCM,data:i8QjLpE=,iv:v/pi69APH1kmnngdqxeCay4HAGTMfZ8uTtMvKQ4ecR0=,tag:h90WScSZY2XlzJVGHcd8QQ==,type:str]"
             - name: MONGODB_ROOT_PASSWORD
               valueFrom:
                 secretKeyRef:
