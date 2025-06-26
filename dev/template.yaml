@@ -43,6 +43,45 @@ secrets:
   - name: zoo-dev-mongodb
 automountServiceAccountToken: false
 ---
+# Source: zoo/charts/mongodb/templates/secrets.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: zoo-dev-mongodb
+  namespace: dev
+  labels:
+    app.kubernetes.io/instance: zoo-dev
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: mongodb
+    app.kubernetes.io/version: 7.0.6
+    helm.sh/chart: mongodb-15.0.0
+    app.kubernetes.io/component: mongodb
+type: Opaque
+data:
+  mongodb-root-password: "Y2FyZXJwYXNz"
+  mongodb-passwords: "MlY2OU1pdngyag=="
+---
+# Source: zoo/charts/zoo-backend/templates/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: zoo-dev-zoo-backend-secret
+  labels:
+    app.kubernetes.io/instance: zoo-dev
+type: Opaque
+stringData:
+  MONGODB_URI: |
+    mongodb://carer:carerpass@zoo-dev-mongodb:27017/zoo?authSource=admin
+---
+# Source: zoo/templates/ghcr-secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ghcr-secret
+type: kubernetes.io/dockerconfigjson
+data:
+  .dockerconfigjson: ewogICJhdXRocyI6IHsKICAgICJnaGNyLmlvIjogewogICAgICAidXNlcm5hbWUiOiAidmllaXRlcyIsCiAgICAgICJwYXNzd29yZCI6ICJnaHBfdkVJbVR2d09CeXhhUzFGRnZZU3VOaGFSR0YyUVpmMGdBUm9BIiwKICAgICAgImF1dGgiOiAiZG1sbGFYUmxjenBuYUhCZmRrVkpiVlIyZDA5Q2VYaGhVekZHUm5aWlUzVk9hR0ZTUjBZeVVWcG1NR2RCVW05QiIKICAgIH0KICB9Cn0=
+---
 # Source: zoo/charts/mongodb/templates/common-scripts-cm.yaml
 apiVersion: v1
 kind: ConfigMap
@@ -409,10 +448,12 @@ spec:
         helm.sh/chart: mongodb-15.0.0
         app.kubernetes.io/component: mongodb
     spec:
+      
       automountServiceAccountToken: false
       serviceAccountName: zoo-dev-mongodb
       affinity:
         podAffinity:
+          
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
             - podAffinityTerm:
@@ -424,11 +465,13 @@ spec:
                 topologyKey: kubernetes.io/hostname
               weight: 1
         nodeAffinity:
+          
       securityContext:
         fsGroup: 1001
         fsGroupChangePolicy: Always
         supplementalGroups: []
         sysctls: []
+      
       enableServiceLinks: true
       initContainers:
         - name: volume-permissions
@@ -468,7 +511,7 @@ spec:
             allowPrivilegeEscalation: false
             capabilities:
               drop:
-                - ALL
+              - ALL
             privileged: false
             readOnlyRootFilesystem: true
             runAsGroup: 1001
@@ -557,7 +600,7 @@ spec:
               subPath: app-logs-dir
             - name: datadir
               mountPath: /bitnami/mongodb
-              subPath:
+              subPath: 
             - name: common-scripts
               mountPath: /bitnami/scripts
             - name: custom-init-scripts
@@ -601,7 +644,7 @@ spec:
       containers:
         - name: backend
           image: "ghcr.io/vieites-tfg/zoo-backend:0.0.1"
-          imagePullPolicy:
+          imagePullPolicy: 
           envFrom:
             - configMapRef:
                 name: zoo-dev-zoo-backend-config
@@ -609,7 +652,8 @@ spec:
                 name: zoo-dev-zoo-backend-secret
           ports:
             - containerPort: 3000
-          resources: {}
+          resources:
+            {}
 ---
 # Source: zoo/charts/zoo-frontend/templates/deployment.yaml
 apiVersion: apps/v1
@@ -651,7 +695,8 @@ spec:
                 name: zoo-dev-zoo-frontend-config
           ports:
             - containerPort: 80
-          resources: {}
+          resources:
+            {}
           volumeMounts:
             - name: frontend-config-volume
               mountPath: /usr/share/nginx/html/config.js
@@ -693,3 +738,4 @@ spec:
                 name: zoo-dev-zoo-frontend-svc
                 port:
                   number: 80
+
