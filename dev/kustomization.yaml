@@ -1,11 +1,4 @@
-
-apiVersion: viaduct.ai/v1
-kind: ksops
-metadata:
-  name: secret-generator
-  annotations:
-    config.kubernetes.io/function: |
-      exec:
-        path: ksops
-files:
-  - secrets.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+generators:
+  - secret_generator.yaml
