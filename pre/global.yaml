@@ -1,3 +1,5 @@
 global:
   env:
     NODE_ENV: development
+  ingress:
+    port: 8081
