@@ -1,5 +1,5 @@
 zoo-frontend:
   image:
-    tag: "ghcr.io/vieites-tfg/zoo-frontend:f00b9480@sha256:e5863e060e76a3273e360ae44af68f345a28e11203d2a92118a4132571152990"
+    tag: "f00b9480"
   ingress:
     hostTemplate: "zoo-dev.example.com"
