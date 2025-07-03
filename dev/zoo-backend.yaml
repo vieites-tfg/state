@@ -1,6 +1,6 @@
 zoo-backend:
   image:
-    tag: "0.0.1"
+    tag: "ghcr.io/vieites-tfg/zoo-backend:f00b9480@sha256:7466ab0ee35587d362c3815f0d5c2f3fc517f148e9c5bbca512951464361d9f1"
   mongo:
     service:
       name: "zoo-dev-mongodb"
