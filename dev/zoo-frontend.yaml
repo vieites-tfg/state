@@ -1,5 +1,3 @@
 zoo-frontend:
   image:
     tag: "f00b9480"
-  ingress:
-    hostTemplate: "zoo-dev.example.com"
