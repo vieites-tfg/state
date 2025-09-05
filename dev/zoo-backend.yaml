@@ -1,6 +1,6 @@
 zoo-backend:
   image:
-    tag: "f54c8e3c"
+    tag: "90b763ba"
   mongo:
     service:
       name: "zoo-dev-mongodb"
