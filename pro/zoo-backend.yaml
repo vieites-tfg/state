@@ -1,6 +1,6 @@
 zoo-backend:
   image:
-    tag: "0.0.1002"
+    tag: "0.1.0"
   mongo:
     service:
       name: "zoo-pro-mongodb"
